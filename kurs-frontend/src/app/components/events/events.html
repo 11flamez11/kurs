@@ -1,0 +1,82 @@
+<app-navbar></app-navbar>
+<div class="page-container">
+  <div class="page-header">
+    <h1>Список событий</h1>
+    <button class="btn-primary" (click)="openCreateForm()">Добавить событие</button>
+  </div>
+
+  @if (showForm) {
+    <div class="form-modal">
+      <div class="form-content">
+        <h2>{{ isEditing ? 'Редактировать событие' : 'Добавить событие' }}</h2>
+        <div class="form-group">
+          <label>ID устройства</label>
+          <input type="number" [(ngModel)]="form.deviceId" placeholder="Например: 1">
+        </div>
+        <div class="form-group">
+          <label>Важность</label>
+          <select [(ngModel)]="form.severity">
+            <option value="INFO">INFO</option>
+            <option value="WARNING">WARNING</option>
+            <option value="CRITICAL">CRITICAL</option>
+            <option value="ERROR">ERROR</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Описание</label>
+          <textarea [(ngModel)]="form.description" rows="3" placeholder="Описание события"></textarea>
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" [(ngModel)]="form.resolved">
+            Решено
+          </label>
+        </div>
+        <div class="form-actions">
+          <button class="btn-secondary" (click)="closeForm()">Отмена</button>
+          <button class="btn-primary" (click)="submitForm()">Сохранить</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (isLoading) {
+    <div class="loading">Загрузка...</div>
+  } @else {
+    <table class="data-table">
+      <thead>
+      <tr>
+        <th>ID</th>
+        <th>Устройство</th>
+        <th>Приоритет</th>
+        <th>Описание</th>
+        <th>Статус</th>
+        <th>Время</th>
+        <th>Действия</th>
+      </tr>
+      </thead>
+      <tbody>
+        @for (e of events; track e.id) {
+          <tr>
+            <td>{{ e.id }}</td>
+            <td>{{ e.deviceId }}</td>
+            <td>
+              <span class="severity-badge" [class]="getSeverityClass(e.severity)">
+                {{ e.severity }}
+              </span>
+            </td>
+            <td>{{ e.description }}</td>
+            <td>{{ e.resolved ? 'Решено' : 'Активно' }}</td>
+            <td>{{ e.timestamp | date:'dd.MM.yyyy HH:mm' }}</td>
+            <td class="actions">
+              <button class="btn-edit" (click)="openEditForm(e)">Изменить</button>
+              @if (isAdmin) {
+                <button class="btn-danger" (click)="deleteEvent(e.id)">Удалить</button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>

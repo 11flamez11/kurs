@@ -1,0 +1,77 @@
+<div class="form-page">
+  <div class="form-container">
+    <div class="form-header">
+      <h1>{{ isEditMode ? 'Редактировать устройство' : 'Добавить устройство' }}</h1>
+      <button class="btn-secondary" routerLink="/devices">Назад</button>
+    </div>
+
+    @if (isLoading && isEditMode) {
+      <div class="loading">Загрузка...</div>
+    } @else {
+      <form (ngSubmit)="onSubmit()" class="device-form">
+
+        @if (errorMessage) {
+          <div class="error-message">{{ errorMessage }}</div>
+        }
+
+        <div class="form-group">
+          <label for="hostname">Hostname *</label>
+          <input
+            type="text"
+            id="hostname"
+            [(ngModel)]="device.hostname"
+            name="hostname"
+            placeholder="server-01"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="ipAddress">IP адрес *</label>
+          <input
+            type="text"
+            id="ipAddress"
+            [(ngModel)]="device.ipAddress"
+            name="ipAddress"
+            placeholder="192.168.1.100"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="os">Операционная система</label>
+          <input
+            type="text"
+            id="os"
+            [(ngModel)]="device.os"
+            name="os"
+            placeholder="Ubuntu 22.04"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="status">Статус</label>
+          <select
+            id="status"
+            [(ngModel)]="device.status"
+            name="status"
+          >
+            <option value="ONLINE">Онлайн</option>
+            <option value="OFFLINE">Офлайн</option>
+            <option value="UNKNOWN">Неизвестно</option>
+          </select>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" (click)="onCancel()">
+            Отмена
+          </button>
+          <button type="submit" class="btn-primary" [disabled]="isLoading">
+            {{ isLoading ? 'Сохранение...' : 'Сохранить' }}
+          </button>
+        </div>
+
+      </form>
+    }
+  </div>
+</div>

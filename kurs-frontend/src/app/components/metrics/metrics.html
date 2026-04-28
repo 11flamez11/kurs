@@ -1,0 +1,73 @@
+<app-navbar></app-navbar>
+<div class="page-container">
+  <div class="page-header">
+    <h1>Список метрик</h1>
+    <button class="btn-primary" (click)="openCreateForm()">Добавить метрику</button>
+  </div>
+
+  @if (showForm) {
+    <div class="form-modal">
+      <div class="form-content">
+        <h2>{{ isEditing ? 'Редактировать метрику' : 'Добавить метрику' }}</h2>
+        <div class="form-group">
+          <label>ID устройства</label>
+          <input type="number" [(ngModel)]="form.deviceId" placeholder="Например: 1">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>CPU (%)</label>
+            <input type="number" [(ngModel)]="form.cpuLoad" placeholder="0-100">
+          </div>
+          <div class="form-group">
+            <label>RAM (%)</label>
+            <input type="number" [(ngModel)]="form.ramUsage" placeholder="0-100">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Disk (%)</label>
+          <input type="number" [(ngModel)]="form.diskUsage" placeholder="0-100">
+        </div>
+        <div class="form-actions">
+          <button class="btn-secondary" (click)="closeForm()">Отмена</button>
+          <button class="btn-primary" (click)="submitForm()">Сохранить</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (isLoading) {
+    <div class="loading">Загрузка...</div>
+  } @else {
+    <table class="data-table">
+      <thead>
+      <tr>
+        <th>ID</th>
+        <th>Устройство</th>
+        <th>CPU</th>
+        <th>RAM</th>
+        <th>Disk</th>
+        <th>Время</th>
+        <th>Действия</th>
+      </tr>
+      </thead>
+      <tbody>
+        @for (m of metrics; track m.id) {
+          <tr>
+            <td>{{ m.id }}</td>
+            <td>{{ m.deviceId }}</td>
+            <td>{{ m.cpuLoad }}%</td>
+            <td>{{ m.ramUsage }}%</td>
+            <td>{{ m.diskUsage }}%</td>
+            <td>{{ m.timestamp | date:'dd.MM.yyyy HH:mm' }}</td>
+            <td class="actions">
+              <button class="btn-small btn-edit" (click)="openEditForm(m)">Изменить</button>
+              @if (isAdmin) {
+                <button class="btn-small btn-danger" (click)="deleteMetric(m.id)">Удалить</button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>

@@ -1,0 +1,116 @@
+<app-navbar></app-navbar>
+<div class="page-container">
+  <div class="page-header">
+    <h1>Сетевые интерфейсы</h1>
+    <button class="btn-primary" (click)="openCreateForm()">
+      Добавить интерфейс
+    </button>
+  </div>
+  @if (showForm) {
+    <div class="form-modal">
+      <div class="form-content">
+        <h2>
+          {{ isEditing ? 'Редактировать интерфейс' : 'Добавить интерфейс' }}
+        </h2>
+        <div class="form-group">
+          <label>ID устройства</label>
+          <input
+            type="number"
+            [(ngModel)]="form.deviceId"
+            placeholder="1">
+        </div>
+        <div class="form-group">
+          <label>Имя интерфейса</label>
+          <input
+            type="text"
+            [(ngModel)]="form.name"
+            placeholder="eth0, wlan0">
+        </div>
+        <div class="form-group">
+          <label>MAC адрес</label>
+          <input
+            type="text"
+            [(ngModel)]="form.macAddress"
+            placeholder="00:1A:2B:3C:4D:5E">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Скорость (Mbps)</label>
+            <input
+              type="number"
+              [(ngModel)]="form.speed"
+              placeholder="1000">
+          </div>
+          <div class="form-group">
+            <label>Статус</label>
+            <select [(ngModel)]="form.status">
+              <option value="UP">UP</option>
+              <option value="DOWN">DOWN</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-secondary" (click)="closeForm()">
+            Отмена
+          </button>
+          <button class="btn-primary" (click)="submitForm()">
+            Сохранить
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (isLoading) {
+    <div class="loading">Загрузка интерфейсов...</div>
+  }
+
+  @else {
+
+    <div class="interfaces-grid">
+      @for (iface of interfaces; track iface.id) {
+        <div class="interface-card">
+          <div class="card-header">
+            <div class="interface-name">
+              {{ iface.name }}
+            </div>
+            <span
+              class="status-badge"
+              [class.up]="iface.status === 'UP'"
+              [class.down]="iface.status === 'DOWN'">
+              {{ iface.status }}
+            </span>
+          </div>
+          <div class="card-body">
+            <div class="info-row">
+              <span class="label">Устройство</span>
+              <span>{{ iface.deviceId }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">MAC</span>
+              <span class="mac">{{ iface.macAddress }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Скорость</span>
+              <span class="speed">{{ iface.speed }} Mbps</span>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button
+              class="btn-small btn-edit"
+              (click)="openEditForm(iface)">
+              Изменить
+            </button>
+            @if (isAdmin) {
+              <button
+                class="btn-small btn-danger"
+                (click)="deleteInterface(iface.id)">
+                Удалить
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

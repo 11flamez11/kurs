@@ -1,0 +1,81 @@
+<app-navbar></app-navbar>
+<div class="dashboard">
+  <main class="content">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3>Устройств</h3>
+        <p class="stat-value">{{ devices.length }}</p>
+      </div>
+      <div class="stat-card">
+        <h3>Онлайн</h3>
+        <p class="stat-value">{{ getOnlineCount() }}</p>
+      </div>
+      <div class="stat-card">
+        <h3>Оффлайн</h3>
+        <p class="stat-value">{{ getOfflineCount() }}</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>Устройства</h2>
+        <button class="btn-primary" routerLink="/devices/create">Добавить девайс</button>
+      </div>
+      <div class="card-body">
+        @if (isLoading) {
+          <div class="loading">Загрузка</div>
+        } @else if (devices.length > 0) {
+          <table class="data-table">
+            <thead>
+            <tr>
+              <th>ID</th>
+              <th>Hostname</th>
+              <th>IP адрес</th>
+              <th>ОС</th>
+              <th>Статус</th>
+              <th>Последняя проверка</th>
+              <th>Действия</th>
+            </tr>
+            </thead>
+            <tbody>
+              @for (device of devices; track device.id) {
+                <tr>
+                  <td>{{ device.id }}</td>
+                  <td class="hostname-cell">
+                    <strong class="device-link" (click)="toggleMenu($event, device)">{{ device.hostname }}</strong>
+                    @if (activeDevice === device) {
+                      <div class="device-menu" (click)="$event.stopPropagation()">
+                        <a (click)="goToMetrics(device.id)">Метрики</a>
+                        <a (click)="goToEvents(device.id)">События</a>
+                        <a (click)="goToInterfaces(device.id)">Интерфейсы</a>
+                      </div>
+                    }
+                  </td>
+                  <td>{{ device.ipAddress }}</td>
+                  <td>{{ device.os }}</td>
+                  <td>
+                    <span class="status-badge" [class]="device.status === 'ONLINE' ? 'online' : 'offline'">
+                      {{ device.status }}
+                    </span>
+                  </td>
+                  <td>{{ device.lastCheck | date:'dd.MM.yyyy HH:mm' }}</td>
+                  <td class="actions">
+                    <button class="btn-edit" (click)="goEdit(device.id)"> Изменить </button>
+                    @if (isAdmin) {
+                      <button (click)="deleteDevice(device.id)" class="btn-danger">Удалить</button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        } @else {
+          <div class="empty-state">
+            <p>Устройств пока нет</p>
+            <button class="btn-primary" routerLink="/devices/create">+ Добавить первое устройство</button>
+          </div>
+        }
+      </div>
+    </div>
+  </main>
+</div>

@@ -1,0 +1,56 @@
+<div class="login-wrapper">
+  <div class="login-container">
+    <div class="login-header">
+      <h1>Мониторинг параметров</h1>
+      <p>Введите данные для входа</p>
+    </div>
+    <form (ngSubmit)="onSubmit()" class="login-form">
+
+      <div class="form-group">
+        <label for="username">Логин</label>
+        <input
+          type="text"
+          id="username"
+          [(ngModel)]="username"
+          name="username"
+          placeholder="Введите логин"
+          autocomplete="username"
+          [disabled]="isLoading"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Пароль</label>
+        <input
+          type="password"
+          id="password"
+          [(ngModel)]="password"
+          name="password"
+          placeholder="Введите пароль"
+          autocomplete="current-password"
+          [disabled]="isLoading"
+        />
+      </div>
+
+      @if (errorMessage) {
+        <div class="error-message">
+          {{ errorMessage }}
+        </div>
+      }
+
+      <button type="submit" class="login-btn" [disabled]="isLoading">
+        @if (!isLoading) {
+          <span>Войти</span>
+        } @else {
+          <span>Вход...</span>
+        }
+      </button>
+
+    </form>
+    <div class="login-footer">
+      <p>Нет аккаунта?</p>
+      <a routerLink="/register">Зарегистрироваться</a>
+    </div>
+
+  </div>
+</div>
