@@ -5,4 +5,7 @@
     <mapping directory="$PROJECT_DIR$/kurs-backend" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/kurs-frontend" vcs="Git" />
   </component>
+  <component name="VcsProjectSettings">
+    <option name="detectVcsMappingsAutomatically" value="false" />
+  </component>
 </project>

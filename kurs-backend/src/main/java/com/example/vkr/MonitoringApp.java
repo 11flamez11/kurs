@@ -1,179 +1,264 @@
 package com.example.vkr;
-
 import oshi.SystemInfo;
-import oshi.hardware.*;
-import oshi.software.os.*;
+import oshi.hardware.CentralProcessor;
+import oshi.hardware.GlobalMemory;
+import oshi.hardware.NetworkIF;
+import oshi.software.os.OperatingSystem;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class MonitoringApp {
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws InterruptedException {
 
+        for (int iteration = 1; iteration <= 2; iteration++) {
+            System.out.println("\n========== ЗАМЕР №" + iteration + " ==========");
+            performMonitoring();
+
+            if (iteration < 2) {
+                System.out.println("\nОжидание 5 секунд перед следующим замером...");
+                TimeUnit.SECONDS.sleep(5);
+            }
+        }
+    }
+
+    // ==================== СЕТЕВЫЕ ПАРАМЕТРЫ ====================
+
+    public static void getNetworkInfo() {
+        // IP-адрес
+        try {
+            InetAddress localHost = InetAddress.getLocalHost();
+            System.out.println("  IPv4: " + localHost.getHostAddress());
+        } catch (UnknownHostException e) {
+            System.out.println("  IPv4: не определен");
+        }
+
+        // Шлюз (исправленный парсинг)
+        try {
+            Process process = Runtime.getRuntime().exec("ipconfig");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), "CP866"));
+            String line;
+            String gateway = "";
+
+            while ((line = reader.readLine()) != null) {
+                if (line.contains("Основной шлюз") || line.contains("Default Gateway")) {
+                    java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\d+\\.\\d+\\.\\d+\\.\\d+").matcher(line);
+                    if (m.find()) {
+                        gateway = m.group();
+                        break;
+                    }
+                }
+            }
+            reader.close();
+
+            if (!gateway.isEmpty() && !gateway.equals("0.0.0.0") && !gateway.equals("::")) {
+                System.out.println("  Шлюз по умолчанию: " + gateway);
+            } else {
+                System.out.println("  Шлюз по умолчанию: не определен");
+            }
+        } catch (Exception e) {
+            System.out.println("  Шлюз по умолчанию: ошибка");
+        }
+
+        // DNS-серверы
+        try {
+            Process process = Runtime.getRuntime().exec("ipconfig /all");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), "CP866"));
+            String line;
+            java.util.ArrayList<String> dnsList = new java.util.ArrayList<>();
+
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if ((line.contains("DNS") || line.contains("Сервер")) && line.matches(".*\\d+\\.\\d+\\.\\d+\\.\\d+.*")) {
+                    java.util.regex.Matcher m = java.util.regex.Pattern.compile("(\\d+\\.\\d+\\.\\d+\\.\\d+)").matcher(line);
+                    while (m.find()) {
+                        String dns = m.group(1);
+                        if (!dnsList.contains(dns)) {
+                            dnsList.add(dns);
+                        }
+                    }
+                }
+            }
+            reader.close();
+
+            System.out.println("  DNS-серверы:");
+            if (dnsList.isEmpty()) {
+                System.out.println("    - не определены");
+            } else {
+                for (String dns : dnsList) {
+                    System.out.println("    - " + dns);
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("  DNS-серверы: ошибка");
+        }
+    }
+
+    public static void checkPing(String host) {
+        try {
+            InetAddress address = InetAddress.getByName(host);
+            long startTime = System.nanoTime();
+            boolean reachable = address.isReachable(3000);
+            long endTime = System.nanoTime();
+
+            if (reachable) {
+                long latencyMs = (endTime - startTime) / 1_000_000;
+                System.out.println("  " + host + " - ДОСТУПЕН (задержка: " + latencyMs + " мс)");
+            } else {
+                System.out.println("  " + host + " - НЕДОСТУПЕН");
+            }
+        } catch (UnknownHostException e) {
+            System.out.println("  " + host + " - НЕИЗВЕСТНЫЙ ХОСТ");
+        } catch (Exception e) {
+            System.out.println("  " + host + " - ОШИБКА: " + e.getMessage());
+        }
+    }
+
+    public static void checkPacketLoss(String host) {
+        try {
+            String os = System.getProperty("os.name").toLowerCase();
+            String command;
+
+            if (os.contains("win")) {
+                command = "ping -n 4 " + host;
+            } else {
+                command = "ping -c 4 " + host;
+            }
+
+            Process process = Runtime.getRuntime().exec(command);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), os.contains("win") ? "CP866" : "UTF-8"));
+            String line;
+            double lossPercent = -1;
+
+            while ((line = reader.readLine()) != null) {
+                if (line.contains("% потерь") || line.contains("% loss") || line.contains("packet loss")) {
+                    java.util.regex.Matcher m = java.util.regex.Pattern.compile("(\\d+)%").matcher(line);
+                    if (m.find()) {
+                        lossPercent = Double.parseDouble(m.group(1));
+                    }
+                }
+            }
+            reader.close();
+
+            if (lossPercent >= 0) {
+                String status = lossPercent == 0 ? "НОРМА" : (lossPercent < 50 ? "СРЕДНЯЯ" : "ВЫСОКАЯ");
+                System.out.println("  " + host + " - Потеря пакетов: " + String.format("%.0f", lossPercent) + "% (" + status + ")");
+            } else {
+                System.out.println("  " + host + " - Не удалось определить потерю пакетов");
+            }
+        } catch (Exception e) {
+            System.out.println("  " + host + " - Ошибка измерения: " + e.getMessage());
+        }
+    }
+
+    public static void performMonitoring() throws InterruptedException {
         SystemInfo si = new SystemInfo();
-        HardwareAbstractionLayer hal = si.getHardware();
-        OperatingSystem os = si.getOperatingSystem();
 
-        CentralProcessor cpu = hal.getProcessor();
-        GlobalMemory memory = hal.getMemory();
+        // === 1. Поиск активного сетевого интерфейса ===
+        List<NetworkIF> allInterfaces = si.getHardware().getNetworkIFs();
+        NetworkIF networkIF = null;
+        String baseInterfaceName = "";
 
-        long[] prevTicks = cpu.getSystemCpuLoadTicks();
+        System.out.println("=== Поиск активного сетевого интерфейса ===");
 
-        NetworkIF activeNet = hal.getNetworkIFs()
-                .stream()
-                .peek(NetworkIF::updateAttributes)
-                .filter(n ->
-                        n.getIPv4addr().length > 0 &&
-                                n.getSpeed() > 0 &&
-                                !n.getDisplayName().toLowerCase().contains("virtual") &&
-                                !n.getDisplayName().toLowerCase().contains("tunnel") &&
-                                !n.getDisplayName().toLowerCase().contains("tap")
-                )
-                .findFirst()
-                .orElse(null);
+        for (NetworkIF nif : allInterfaces) {
+            nif.updateAttributes();
+            String name = nif.getDisplayName();
+            long bytesSent = nif.getBytesSent();
+            long bytesRecv = nif.getBytesRecv();
 
-        if (activeNet == null) {
-            System.out.println("❌ Не найден реальный сетевой интерфейс");
+            boolean isFilter = name.contains("WFP") || name.contains("Filter") ||
+                    name.contains("QoS") || name.contains("LightWeight") ||
+                    name.contains("Virtual") || name.contains("TAP") ||
+                    name.contains("Loopback");
+
+            if ((bytesSent > 1000000 || bytesRecv > 1000000) && !isFilter && networkIF == null) {
+                networkIF = nif;
+                baseInterfaceName = name.split("-WFP")[0].split("-Native")[0].split("-VirtualBox")[0].trim();
+                System.out.println("Найден рабочий интерфейс: " + baseInterfaceName);
+            }
+        }
+
+        if (networkIF == null) {
+            System.out.println("Активные сетевые интерфейсы не найдены!");
             return;
         }
 
-        System.out.println("✅ Active interface: " + activeNet.getDisplayName());
+        // === 2. Замер трафика ===
+        networkIF.updateAttributes();
+        long prevSent = networkIF.getBytesSent();
+        long prevRecv = networkIF.getBytesRecv();
+        long prevTime = System.currentTimeMillis();
 
-        long prevRecv = activeNet.getBytesRecv();
-        long prevSent = activeNet.getBytesSent();
+        // === 3. Замер CPU ===
+        CentralProcessor processor = si.getHardware().getProcessor();
+        long[] prevTicks = processor.getSystemCpuLoadTicks();
 
-        while (true) {
+        TimeUnit.SECONDS.sleep(2);
 
-            System.out.println("\n══════════════════════════════════════");
-            System.out.println("📊 SYSTEM MONITOR");
-            System.out.println("══════════════════════════════════════");
+        networkIF.updateAttributes();
+        long currentSent = networkIF.getBytesSent();
+        long currentRecv = networkIF.getBytesRecv();
+        long currentTime = System.currentTimeMillis();
 
-            // ===== CPU =====
-            double cpuLoad = cpu.getSystemCpuLoadBetweenTicks(prevTicks) * 100;
-            prevTicks = cpu.getSystemCpuLoadTicks();
+        long timeDiff = (currentTime - prevTime) / 1000;
+        if (timeDiff == 0) timeDiff = 1;
 
-            cpuLoad = Math.max(0, Math.min(100, cpuLoad));
+        long uploadBytes = currentSent - prevSent;
+        long downloadBytes = currentRecv - prevRecv;
 
-            // ===== RAM =====
-            double totalMem = memory.getTotal();
-            double availableMem = memory.getAvailable();
-            double ramUsage = ((totalMem - availableMem) / totalMem) * 100;
+        double uploadMbps = (uploadBytes * 8.0) / (timeDiff * 1_000_000.0);
+        double downloadMbps = (downloadBytes * 8.0) / (timeDiff * 1_000_000.0);
 
-            System.out.printf("CPU: %.2f %%\n", cpuLoad);
-            System.out.printf("RAM: %.2f %%\n", ramUsage);
+        double totalSentMB = currentSent / 1_000_000.0;
+        double totalRecvMB = currentRecv / 1_000_000.0;
 
-            // ===== UPTIME =====
-            System.out.println("Uptime: " + formatUptime(os.getSystemUptime()));
+        double cpuLoad = processor.getSystemCpuLoadBetweenTicks(prevTicks) * 100;
 
-            // ===== NETWORK =====
-            activeNet.updateAttributes();
+        GlobalMemory memory = si.getHardware().getMemory();
+        long totalMem = memory.getTotal();
+        long usedMem = totalMem - memory.getAvailable();
 
-            long currentRecv = activeNet.getBytesRecv();
-            long currentSent = activeNet.getBytesSent();
+        // === 4. ВЫВОД РЕЗУЛЬТАТОВ ===
 
-            long speedIn = Math.max(0, currentRecv - prevRecv);
-            long speedOut = Math.max(0, currentSent - prevSent);
+        System.out.println("\n=== СЕТЕВЫЕ ПАРАМЕТРЫ ===");
+        System.out.println("Интерфейс: " + baseInterfaceName);
+        System.out.println("MAC адрес: " + networkIF.getMacaddr());
+        System.out.println("Скорость адаптера: " + networkIF.getSpeed() / 1_000_000 + " Mbps");
 
-            prevRecv = currentRecv;
-            prevSent = currentSent;
+        System.out.println("\n--- Детальная конфигурация сети ---");
+        getNetworkInfo();
 
-            System.out.println("\n🌐 NETWORK:");
-            System.out.println("IP: " + String.join(", ", activeNet.getIPv4addr()));
-            System.out.println("Speed IN: " + formatBytes(speedIn) + "/s");
-            System.out.println("Speed OUT: " + formatBytes(speedOut) + "/s");
+        System.out.println("\n--- ПРОВЕРКА ДОСТУПНОСТИ (PING) ---");
+        checkPing("8.8.8.8");
+        checkPing("ya.ru");
+        checkPing("google.com");
 
-            // ===== REAL PING =====
-            try {
-                Process ping = Runtime.getRuntime().exec("ping -n 1 8.8.8.8");
-                int result = ping.waitFor();
+        System.out.println("\n--- ПОТЕРЯ ПАКЕТОВ (PACKET LOSS) ---");
+        checkPacketLoss("8.8.8.8");
+        checkPacketLoss("ya.ru");
 
-                if (result == 0) {
-                    System.out.println("Ping: OK");
-                } else {
-                    System.out.println("Ping: FAIL");
-                }
+        System.out.println("\n--- ТРАФИК ---");
+        System.out.printf("Исходящий трафик: %.2f Mbps (%d байт)\n", uploadMbps, uploadBytes);
+        System.out.printf("Входящий трафик: %.2f Mbps (%d байт)\n", downloadMbps, downloadBytes);
+        System.out.println("  (замер за " + timeDiff + " секунд)");
 
-            } catch (Exception e) {
-                System.out.println("Ping error: " + e.getMessage());
-            }
+        System.out.println("\n--- НАКОПЛЕННЫЙ ОБЪЁМ (с момента загрузки) ---");
+        System.out.printf("Всего отправлено: %.2f MB\n", totalSentMB);
+        System.out.printf("Всего получено: %.2f MB\n", totalRecvMB);
 
-            // ===== DISK =====
-            System.out.println("\n💾 DISKS:");
-            for (OSFileStore store : os.getFileSystem().getFileStores()) {
+        System.out.println("\n=== СИСТЕМНЫЕ ПАРАМЕТРЫ ===");
+        System.out.printf("Загрузка CPU: %.2f%%\n", cpuLoad);
+        System.out.printf("Оперативная память: %d MB / %d MB (использовано / всего)\n", usedMem / 1024 / 1024, totalMem / 1024 / 1024);
 
-                long total = store.getTotalSpace();
-                long free = store.getUsableSpace();
-
-                if (total == 0) continue;
-
-                double usage = (double) (total - free) / total * 100;
-
-                System.out.printf("%s: %.2f %%\n", store.getMount(), usage);
-
-                if (usage > 90) {
-                    System.out.println("[WARNING] Disk almost full!");
-                }
-            }
-
-            // ===== TOP PROCESSES =====
-            System.out.println("\n⚙️ TOP PROCESSES:");
-
-            List<OSProcess> processes = os.getProcesses();
-
-            processes.sort((a, b) ->
-                    Double.compare(
-                            b.getProcessCpuLoadCumulative(),
-                            a.getProcessCpuLoadCumulative()
-                    )
-            );
-
-            int limit = Math.min(5, processes.size());
-
-            for (int i = 0; i < limit; i++) {
-                OSProcess p = processes.get(i);
-
-                double procCpu = p.getProcessCpuLoadCumulative() * 100;
-                procCpu = Math.max(0, Math.min(100, procCpu));
-
-                System.out.printf("%s -> %.2f %%\n",
-                        p.getName(),
-                        procCpu
-                );
-            }
-
-            // ===== ALERTS =====
-            if (cpuLoad > 80) {
-                System.out.println("[WARNING] High CPU load!");
-            }
-
-            if (ramUsage > 90) {
-                System.out.println("[ERROR] High RAM usage!");
-            }
-
-            if (speedIn > 5_000_000) {
-                System.out.println("[INFO] High network traffic!");
-            }
-
-            System.out.println("══════════════════════════════════════");
-
-            Thread.sleep(2000);
-        }
-    }
-
-    // ===== UTIL METHODS =====
-
-    private static String formatBytes(long bytes) {
-        if (bytes < 1024) return bytes + " B";
-        if (bytes < 1024 * 1024) return String.format("%.1f KB", bytes / 1024.0);
-        if (bytes < 1024 * 1024 * 1024) return String.format("%.1f MB", bytes / (1024.0 * 1024));
-        return String.format("%.2f GB", bytes / (1024.0 * 1024 * 1024));
-    }
-
-    private static String formatUptime(long seconds) {
-        long hours = seconds / 3600;
-        long minutes = (seconds % 3600) / 60;
-        long secs = seconds % 60;
-        return hours + "h " + minutes + "m " + secs + "s";
+        System.out.println("\n=== ОПЕРАЦИОННАЯ СИСТЕМА ===");
+        OperatingSystem os = si.getOperatingSystem();
+        System.out.println("Имя: " + os.getFamily());
+        System.out.println("Версия: " + os.getVersionInfo().getVersion());
     }
 }
