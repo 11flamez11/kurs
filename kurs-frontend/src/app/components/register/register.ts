@@ -29,8 +29,8 @@ export class Register {
       return;
     }
 
-    if (this.password.length < 4) {
-      this.errorMessage = 'Пароль должен содержать минимум 4 символа';
+    if (this.password.length < 6) {
+      this.errorMessage = 'Пароль должен содержать минимум 6 символов';
       return;
     }
 

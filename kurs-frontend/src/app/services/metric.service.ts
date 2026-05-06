@@ -28,4 +28,16 @@ export class MetricService {
     return this.http.get<Metric[]>(`${environment.apiUrl}/metrics/device/${deviceId}`);
   }
 
+  collectForDevice(
+    deviceId: number,
+    samples = 10,
+    intervalSeconds = 2,
+    saveToDb = false,
+  ): Observable<Metric[]> {
+    return this.http.post<Metric[]>(
+      `${environment.apiUrl}/metrics/device/${deviceId}/collect?samples=${samples}&intervalSeconds=${intervalSeconds}&saveToDb=${saveToDb}`,
+      {},
+    );
+  }
+
 }

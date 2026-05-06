@@ -67,14 +67,6 @@ export class Dashboard implements OnInit {
     });
   }
 
-  getOnlineCount(): number {
-    return this.devices.filter((d) => d.status === 'ONLINE').length;
-  }
-
-  getOfflineCount(): number {
-    return this.devices.filter((d) => d.status === 'OFFLINE').length;
-  }
-
   goEdit(id: number) {
     this.router.navigate(['/devices', id, 'edit']);
   }
@@ -99,5 +91,15 @@ export class Dashboard implements OnInit {
 
   goToInterfaces(deviceId: number): void {
     this.router.navigate(['/interfaces'], { queryParams: { deviceId } });
+  }
+
+  addCurrentDevice(): void {
+    this.deviceService.registerLocal().subscribe({
+      next: () => this.loadDevices(),
+      error: (error) => {
+        console.error('Ошибка авторегистрации устройства:', error);
+        alert('Не удалось добавить текущее устройство автоматически');
+      },
+    });
   }
 }

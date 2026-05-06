@@ -1,8 +1,10 @@
 package com.example.vkr.controller;
 
 import com.example.vkr.dto.EventDto;
+import com.example.vkr.entity.Device;
 import com.example.vkr.entity.Event;
 import com.example.vkr.entity.User;
+import com.example.vkr.repository.DeviceRepository;
 import com.example.vkr.repository.EventRepository;
 import com.example.vkr.repository.UserRepository;
 import com.example.vkr.service.EventService;
@@ -20,17 +22,34 @@ import java.util.List;
 public class EventController {
 
     private final EventService eventService;
+    private final DeviceRepository deviceRepository;
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
 
     @GetMapping
-    public List<EventDto> getAll() {
-        return eventService.getAll();
+    public List<EventDto> getAll(Authentication authentication) {
+        String username = authentication.getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        return isAdmin ? eventService.getAll() : eventService.getAllByUser(user);
     }
 
     @GetMapping("/device/{deviceId}")
-    public List<EventDto> getByDevice(@PathVariable Long deviceId) {
-        return eventService.getByDevice(deviceId);
+    public ResponseEntity<?> getByDevice(@PathVariable Long deviceId, Authentication authentication) {
+        String username = authentication.getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        Device device = deviceRepository.findById(deviceId)
+                .orElseThrow(() -> new RuntimeException("Device not found"));
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        boolean isOwner = device.getUser().getId().equals(user.getId());
+        if (!isAdmin && !isOwner) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Access denied");
+        }
+        return ResponseEntity.ok(eventService.getByDevice(deviceId));
     }
 
     @PostMapping
@@ -41,6 +60,17 @@ public class EventController {
             return ResponseEntity.badRequest().body("Device ID is required");
         }
         String username = authentication.getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        Device device = deviceRepository.findById(dto.getDeviceId())
+                .orElseThrow(() -> new RuntimeException("Device not found"));
+        boolean isAdmin = user.getRoles().stream()
+                .anyMatch(r -> r.getName().equals("ROLE_ADMIN"));
+        boolean isOwner = device.getUser().getId().equals(user.getId());
+        if (!isAdmin && !isOwner) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Only admin or device owner can create events");
+        }
         try {
             EventDto created = eventService.create(dto, username);
             return ResponseEntity.ok(created);

@@ -1,73 +1,133 @@
 <app-navbar></app-navbar>
 <div class="page-container">
   <div class="page-header">
-    <h1>Список метрик</h1>
-    <button class="btn-primary" (click)="openCreateForm()">Добавить метрику</button>
+    <div>
+      <h1>Мониторинг устройства</h1>
+      <div class="subline">
+        {{ deviceId ? ('Устройство #' + deviceId) : 'Выберите устройство на дашборде' }}
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-primary" (click)="startMonitoring()" [disabled]="!deviceId || monitoringActive">Старт</button>
+      <button class="btn-secondary" (click)="stopMonitoring()" [disabled]="!monitoringActive">Стоп</button>
+    </div>
   </div>
 
-  @if (showForm) {
-    <div class="form-modal">
-      <div class="form-content">
-        <h2>{{ isEditing ? 'Редактировать метрику' : 'Добавить метрику' }}</h2>
-        <div class="form-group">
-          <label>ID устройства</label>
-          <input type="number" [(ngModel)]="form.deviceId" placeholder="Например: 1">
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>CPU (%)</label>
-            <input type="number" [(ngModel)]="form.cpuLoad" placeholder="0-100">
-          </div>
-          <div class="form-group">
-            <label>RAM (%)</label>
-            <input type="number" [(ngModel)]="form.ramUsage" placeholder="0-100">
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Disk (%)</label>
-          <input type="number" [(ngModel)]="form.diskUsage" placeholder="0-100">
-        </div>
-        <div class="form-actions">
-          <button class="btn-secondary" (click)="closeForm()">Отмена</button>
-          <button class="btn-primary" (click)="submitForm()">Сохранить</button>
+  <div class="top-panel">
+    <div class="state-line">
+      <span
+        class="status-dot"
+        [class.on]="statusClass === 'on'"
+        [class.work]="statusClass === 'work'"
+        [class.off]="statusClass === 'off'"
+      ></span>
+      <span>{{ statusText }}</span>
+    </div>
+    <div class="interval-box">
+      <label>Интервал, сек</label>
+      <input type="number" min="1" max="30" [value]="collectIntervalSeconds" (input)="onIntervalChange($event)" />
+    </div>
+  </div>
+
+  <div class="cards-grid">
+    <div class="metric-card">
+      <div class="card-title">CPU</div>
+      <div class="gauge-wrap">
+        <div class="gauge gauge-cpu" [ngStyle]="gaugeStyle(latestMetric?.cpuLoad)">
+          <div class="gauge-center">{{ pct(latestMetric?.cpuLoad) }}</div>
         </div>
       </div>
     </div>
-  }
+    <div class="metric-card">
+      <div class="card-title">RAM</div>
+      <div class="gauge-wrap">
+        <div class="gauge gauge-ram" [ngStyle]="gaugeStyle(latestMetric?.ramUsage)">
+          <div class="gauge-center">{{ pct(latestMetric?.ramUsage) }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="card-title">Disk</div>
+      <div class="gauge-wrap">
+        <div class="gauge gauge-disk" [ngStyle]="gaugeStyle(latestMetric?.diskUsage)">
+          <div class="gauge-center">{{ pct(latestMetric?.diskUsage) }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="card-title">Ping</div>
+      <div class="big-value">{{ ping() }}</div>
+    </div>
+    <div class="metric-card">
+      <div class="card-title">Входящий трафик</div>
+      <div class="big-value">{{ mbps(latestMetric?.downloadMbps) }}</div>
+    </div>
+    <div class="metric-card">
+      <div class="card-title">Исходящий трафик</div>
+      <div class="big-value">{{ mbps(latestMetric?.uploadMbps) }}</div>
+    </div>
+    <div class="metric-card">
+      <div class="card-title">Потери пакетов</div>
+      <div class="big-value">{{ pct(latestMetric?.packetLossPercent) }}</div>
+    </div>
+  </div>
 
-  @if (isLoading) {
-    <div class="loading">Загрузка...</div>
-  } @else {
-    <table class="data-table">
-      <thead>
-      <tr>
-        <th>ID</th>
-        <th>Устройство</th>
-        <th>CPU</th>
-        <th>RAM</th>
-        <th>Disk</th>
-        <th>Время</th>
-        <th>Действия</th>
-      </tr>
-      </thead>
-      <tbody>
-        @for (m of metrics; track m.id) {
-          <tr>
-            <td>{{ m.id }}</td>
-            <td>{{ m.deviceId }}</td>
-            <td>{{ m.cpuLoad }}%</td>
-            <td>{{ m.ramUsage }}%</td>
-            <td>{{ m.diskUsage }}%</td>
-            <td>{{ m.timestamp | date:'dd.MM.yyyy HH:mm' }}</td>
-            <td class="actions">
-              <button class="btn-small btn-edit" (click)="openEditForm(m)">Изменить</button>
+  <div class="chart-card">
+    <h2>График трафика</h2>
+    <div class="chart-wrap">
+      <canvas baseChart [data]="trafficChartData" [options]="trafficChartOptions" [type]="'line'"></canvas>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-head">
+      <h2>{{ monitoringActive ? 'Последние live-замеры' : 'Сохраненные метрики' }}</h2>
+    </div>
+    @if (rows.length > 0) {
+      <table class="data-table">
+        <thead>
+        <tr>
+          <th>ID</th>
+          <th>Устройство</th>
+          <th>CPU</th>
+          <th>RAM</th>
+          <th>Disk</th>
+          <th>IN</th>
+          <th>OUT</th>
+          <th>Ping</th>
+          <th>Loss</th>
+          <th>Время</th>
+          @if (isAdmin) {
+            <th>Действия</th>
+          }
+        </tr>
+        </thead>
+        <tbody>
+          @for (m of rows; track m.timestamp) {
+            <tr>
+              <td>{{ m.id ?? 'live' }}</td>
+              <td>{{ m.deviceId ?? '-' }}</td>
+              <td>{{ pct(m.cpuLoad) }}</td>
+              <td>{{ pct(m.ramUsage) }}</td>
+              <td>{{ pct(m.diskUsage) }}</td>
+              <td>{{ mbps(m.downloadMbps) }}</td>
+              <td>{{ mbps(m.uploadMbps) }}</td>
+              <td>{{ m.pingMs && m.pingMs >= 0 ? (m.pingMs | number:'1.0-1') + ' ms' : 'n/a' }}</td>
+              <td>{{ pct(m.packetLossPercent) }}</td>
+              <td>{{ m.timestamp | date:'dd.MM HH:mm:ss' }}</td>
               @if (isAdmin) {
-                <button class="btn-small btn-danger" (click)="deleteMetric(m.id)">Удалить</button>
+                <td>
+                  @if (m.id) {
+                    <button class="btn-small btn-danger" (click)="deleteMetric(m.id)">Удалить</button>
+                  }
+                </td>
               }
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
-  }
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      <div class="empty-data">Нажмите Старт для начала мониторинга</div>
+    }
+  </div>
 </div>

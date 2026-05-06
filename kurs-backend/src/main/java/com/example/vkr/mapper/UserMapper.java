@@ -11,6 +11,9 @@ public class UserMapper {
         UserDto dto = new UserDto();
         dto.setId(user.getId());
         dto.setUsername(user.getUsername());
+        dto.setRoles(user.getRoles().stream()
+                .map(role -> role.getName())
+                .collect(java.util.stream.Collectors.toSet()));
         return dto;
     }
 

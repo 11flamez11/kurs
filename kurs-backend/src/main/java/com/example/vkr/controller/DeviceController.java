@@ -54,6 +54,14 @@ public class DeviceController {
         return ResponseEntity.ok(deviceService.create(dto));
     }
 
+    @PostMapping("/register-local")
+    public ResponseEntity<DeviceDto> registerLocal(Authentication authentication) {
+        String username = authentication.getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return ResponseEntity.ok(deviceService.registerCurrentMachine(user.getId()));
+    }
+
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         deviceService.delete(id);

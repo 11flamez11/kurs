@@ -1,0 +1,78 @@
+<app-navbar></app-navbar>
+<section class="users-admin-page">
+  <div class="users-admin-inner">
+    <header class="users-admin-header">
+      <div>
+        <h1>Пользователи системы</h1>
+        <p class="users-admin-sub">
+          Учётные записи и роли. Удаление необратимо — собственную учётную запись удалить нельзя.
+        </p>
+      </div>
+    </header>
+
+    @if (!isLoading && users.length > 0) {
+      <div class="users-stats">
+        <div class="users-stat-card">
+          <span class="users-stat-value">{{ users.length }}</span>
+          <span class="users-stat-label">учётных записей</span>
+        </div>
+        <div class="users-stat-card accent">
+          <span class="users-stat-value">{{ adminCount }}</span>
+          <span class="users-stat-label">администраторов</span>
+        </div>
+        <div class="users-stat-card">
+          <span class="users-stat-value">{{ userOnlyCount }}</span>
+          <span class="users-stat-label">обычных пользователей</span>
+        </div>
+      </div>
+    }
+
+    <div class="users-table-card">
+      @if (isLoading) {
+        <div class="users-loading">Загрузка…</div>
+      } @else if (users.length === 0) {
+        <div class="users-empty">
+          <p>Пользователей пока нет.</p>
+        </div>
+      } @else {
+        <div class="users-table-wrap">
+          <table class="users-table">
+            <thead>
+            <tr>
+              <th class="col-id">ID</th>
+              <th>Логин</th>
+              <th>Роль</th>
+              <th class="col-actions">Действия</th>
+            </tr>
+            </thead>
+            <tbody>
+              @for (u of users; track u.id) {
+                <tr [class.row-admin]="isAdminUser(u)" [class.row-self]="isCurrentUser(u)">
+                  <td class="col-id muted">{{ u.id }}</td>
+                  <td class="cell-user">
+                    <span class="user-name">{{ u.username }}</span>
+                    @if (isCurrentUser(u)) {
+                      <span class="you-badge">вы</span>
+                    }
+                  </td>
+                  <td>
+                    <span class="role-badge" [class.admin]="isAdminUser(u)" [class.user]="!isAdminUser(u)">
+                      {{ roleLabel(u) }}
+                    </span>
+                  </td>
+                  <td class="col-actions">
+                    @if (isCurrentUser(u)) {
+                      <span class="action-hint">—</span>
+                    } @else {
+                      <button type="button" class="btn-delete" (click)="deleteUser(u)">Удалить</button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+</section>

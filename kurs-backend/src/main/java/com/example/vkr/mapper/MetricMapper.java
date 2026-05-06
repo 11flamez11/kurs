@@ -14,6 +14,10 @@ public class MetricMapper {
         dto.setCpuLoad(metric.getCpuLoad());
         dto.setRamUsage(metric.getRamUsage());
         dto.setDiskUsage(metric.getDiskUsage());
+        dto.setUploadMbps(metric.getUploadMbps());
+        dto.setDownloadMbps(metric.getDownloadMbps());
+        dto.setPingMs(metric.getPingMs());
+        dto.setPacketLossPercent(metric.getPacketLossPercent());
         dto.setUptime(metric.getUptime());
         dto.setTimestamp(metric.getTimestamp());
         if (metric.getDevice() != null) {
@@ -28,6 +32,10 @@ public class MetricMapper {
         metric.setCpuLoad(dto.getCpuLoad());
         metric.setRamUsage(dto.getRamUsage());
         metric.setDiskUsage(dto.getDiskUsage());
+        metric.setUploadMbps(dto.getUploadMbps());
+        metric.setDownloadMbps(dto.getDownloadMbps());
+        metric.setPingMs(dto.getPingMs());
+        metric.setPacketLossPercent(dto.getPacketLossPercent());
         metric.setUptime(dto.getUptime());
         metric.setTimestamp(dto.getTimestamp());
         metric.setDevice(device);

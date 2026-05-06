@@ -1,11 +1,14 @@
 <header class="main-header">
   <div class="header-left">
-    <h1>Мониторинг параметров</h1>
+    <h1>NetMonitor</h1>
     <nav class="nav-links">
-      <a routerLink="/dashboard" routerLinkActive="active">Устройства</a>
-      <a routerLink="/metrics" routerLinkActive="active">Метрики</a>
-      <a routerLink="/events" routerLinkActive="active">События</a>
+      <a routerLink="/dashboard" routerLinkActive="active">Хосты</a>
+      <a routerLink="/metrics" routerLinkActive="active">Мониторинг</a>
+      <a routerLink="/events" routerLinkActive="active">Алерты</a>
       <a routerLink="/interfaces" routerLinkActive="active">Интерфейсы</a>
+      @if (isAdmin) {
+        <a routerLink="/admin/users" routerLinkActive="active">Пользователи</a>
+      }
     </nav>
   </div>
 

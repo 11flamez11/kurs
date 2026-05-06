@@ -1,66 +1,64 @@
 .main-header {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-  color: white;
-  padding: 0 50px;
-  height: 80px;
+  background: #fff;
+  color: #0f172a;
+  padding: 0 28px;
+  height: 64px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.06);
+  border-bottom: 1px solid #e8ecf4;
   position: relative;
 }
-
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 50px;
+  gap: 24px;
   flex: 1;
 }
 
 .header-left h1 {
-  font-size: 24px;
+  font-size: 19px;
   margin: 0;
   white-space: nowrap;
-  color: white;
-  font-weight: 600;
-  letter-spacing: 1px;
+  color: #0f172a;
+  font-weight: 700;
+  letter-spacing: 0.3px;
 }
-
 
 .nav-links {
   display: flex;
-  gap: 8px;
+  gap: 4px;
 }
 
 .nav-links a {
-  color: rgba(255, 255, 255, 0.8);
+  color: #64748b;
   text-decoration: none;
-  padding: 10px 20px;
+  padding: 8px 12px;
   border-radius: 8px;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
-  transition: all 0.3s;
+  transition: background 0.2s, color 0.2s;
   position: relative;
 }
 
 .nav-links a:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  transform: translateY(-2px);
+  background: #f1f5f9;
+  color: #0f172a;
+  transform: none;
 }
 
 .nav-links a.active {
-  background: rgba(0, 180, 219, 0.2);
-  color: #00b4db;
-  border-bottom: 2px solid #00b4db;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-bottom: none;
 }
 
 .header-right {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
 }
 
 .user-info {
@@ -68,15 +66,16 @@
   align-items: center;
   gap: 12px;
   padding: 6px 16px 6px 12px;
-  background: rgba(255, 255, 255, 0.1);
+  background: #f8fafc;
+  border: 1px solid #e8ecf4;
   border-radius: 40px;
-  transition: all 0.3s;
-  backdrop-filter: blur(5px);
+  transition: background 0.2s, border-color 0.2s;
 }
 
 .user-info:hover {
-  background: rgba(255, 255, 255, 0.15);
-  transform: translateY(-1px);
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  transform: none;
 }
 
 .avatar {
@@ -84,14 +83,14 @@
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #00b4db;
+  border: 2px solid #e2e8f0;
 }
 
 .avatar-placeholder {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #00b4db 0%, #0083b0 100%);
+  background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -101,37 +100,37 @@
 }
 
 .username {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
-  color: white;
+  color: #1e293b;
 }
 
 .badge {
-  background: linear-gradient(135deg, #00b4db 0%, #0083b0 100%);
+  background: #e0e7ff;
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 11px;
   font-weight: 700;
-  color: white;
-  letter-spacing: 0.5px;
+  color: #3730a3;
+  letter-spacing: 0.3px;
 }
 
 .logout-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  color: #475569;
   padding: 8px 18px;
   border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
-  transition: all 0.3s;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
 }
 
 .logout-btn:hover {
-  background: #dc3545;
-  border-color: #dc3545;
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+  transform: none;
+  box-shadow: none;
 }

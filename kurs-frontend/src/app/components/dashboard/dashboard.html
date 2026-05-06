@@ -1,25 +1,47 @@
 <app-navbar></app-navbar>
 <div class="dashboard">
   <main class="content">
-    <div class="stats-grid">
-      <div class="stat-card">
-        <h3>Устройств</h3>
-        <p class="stat-value">{{ devices.length }}</p>
-      </div>
-      <div class="stat-card">
-        <h3>Онлайн</h3>
-        <p class="stat-value">{{ getOnlineCount() }}</p>
-      </div>
-      <div class="stat-card">
-        <h3>Оффлайн</h3>
-        <p class="stat-value">{{ getOfflineCount() }}</p>
-      </div>
-    </div>
+    @if (!isLoading && username) {
+      <section class="welcome-panel">
+        <div class="welcome-text">
+          <h2 class="welcome-title">Привет, {{ username }}</h2>
+          @if (devices.length === 0) {
+            <p class="welcome-sub">Добавьте текущий компьютер — и начнётся сбор метрик и сетевых данных.</p>
+          } @else if (devices.length === 1) {
+            <p class="welcome-sub">Быстрый доступ ко всем разделам мониторинга для вашего хоста.</p>
+          } @else {
+            <p class="welcome-sub">Несколько хостов — выберите действия в таблице или по карточкам ниже.</p>
+          }
+        </div>
+        @if (devices.length >= 1) {
+          <div class="host-cards">
+            @for (d of devices; track d.id) {
+              <article class="host-card">
+                <div class="host-card-top">
+                  <span class="host-name">{{ d.hostname }}</span>
+                  <span class="status-badge" [class]="d.status === 'ONLINE' ? 'online' : 'offline'">
+                    {{ d.status }}
+                  </span>
+                </div>
+                <div class="host-meta">{{ d.ipAddress }} · {{ d.os }}</div>
+                <div class="host-actions">
+                  <button type="button" class="chip chip-primary" (click)="goToMetrics(d.id)">Мониторинг</button>
+                  <button type="button" class="chip" (click)="goToEvents(d.id)">События</button>
+                  <button type="button" class="chip" (click)="goToInterfaces(d.id)">Интерфейсы</button>
+                </div>
+              </article>
+            }
+          </div>
+        }
+      </section>
+    }
 
     <div class="card">
       <div class="card-header">
         <h2>Устройства</h2>
-        <button class="btn-primary" routerLink="/devices/create">Добавить девайс</button>
+        <div class="header-actions">
+          <button class="btn-secondary" (click)="addCurrentDevice()">Добавить этот компьютер</button>
+        </div>
       </div>
       <div class="card-body">
         @if (isLoading) {
@@ -60,7 +82,8 @@
                   </td>
                   <td>{{ device.lastCheck | date:'dd.MM.yyyy HH:mm' }}</td>
                   <td class="actions">
-                    <button class="btn-edit" (click)="goEdit(device.id)"> Изменить </button>
+                    <button class="btn-primary" (click)="goToMetrics(device.id)">Мониторинг</button>
+                    <button class="btn-edit" (click)="goEdit(device.id)">Изменить</button>
                     @if (isAdmin) {
                       <button (click)="deleteDevice(device.id)" class="btn-danger">Удалить</button>
                     }
@@ -72,7 +95,7 @@
         } @else {
           <div class="empty-state">
             <p>Устройств пока нет</p>
-            <button class="btn-primary" routerLink="/devices/create">+ Добавить первое устройство</button>
+            <button class="btn-secondary" (click)="addCurrentDevice()">Добавить этот компьютер</button>
           </div>
         }
       </div>

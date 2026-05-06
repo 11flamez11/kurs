@@ -29,6 +29,10 @@ export class DeviceService {
     });
   }
 
+  registerLocal(): Observable<Device> {
+    return this.http.post<Device>(`${environment.apiUrl}/devices/register-local`, {});
+  }
+
   update(id: number, device: Partial<Device>): Observable<Device> {
     return this.http.put<Device>(`${environment.apiUrl}/devices/${id}`, device, {
     });

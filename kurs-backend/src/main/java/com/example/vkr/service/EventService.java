@@ -31,6 +31,13 @@ public class EventService {
                 .collect(Collectors.toList());
     }
 
+    public List<EventDto> getAllByUser(User user) {
+        return eventRepository.findByDeviceUser(user)
+                .stream()
+                .map(eventMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
     public EventDto create(EventDto dto, String username) {
         Device device = deviceRepository.findById(dto.getDeviceId())
                 .orElseThrow(() -> new RuntimeException("Device not found"));

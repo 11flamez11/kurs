@@ -1,27 +1,45 @@
 .page-container {
-  padding: 24px;
+  padding: 28px 36px 40px;
+  background: #f4f6fb;
+  min-height: calc(100vh - 64px);
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  gap: 16px;
 }
 
 .page-header h1 {
-  font-size: 24px;
-  color: #333;
+  font-size: 26px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 6px;
+}
+
+.subline {
   margin: 0;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.table-card {
+  background: #fff;
+  border: 1px solid #e8ecf4;
+  border-radius: 14px;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
 }
 
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background: #fff;
 }
 
 .data-table th,
@@ -53,13 +71,13 @@
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  border: none;
-  background: #ffc107;
-  color: #333;
+  border: 1px solid #c7d2fe;
+  background: #eef2ff;
+  color: #3730a3;
 }
 
 .btn-edit:hover {
-  background: #e0a800;
+  background: #e0e7ff;
 }
 
 .btn-danger {
@@ -68,13 +86,13 @@
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  border: none;
-  background: #dc3545;
-  color: white;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
 }
 
 .btn-danger:hover {
-  background: #c82333;
+  background: #fee2e2;
 }
 
 .loading {
@@ -164,7 +182,7 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  background: #2563eb;
   color: white;
   border: none;
   padding: 10px 20px;
@@ -176,7 +194,8 @@
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
+  background: #1d4ed8;
 }
 
 .btn-secondary {

@@ -35,4 +35,8 @@ export class InterfaceService {
   getByDevice(deviceId: number): Observable<NetworkInterface[]> {
     return this.http.get<NetworkInterface[]>(`${environment.apiUrl}/interfaces/device/${deviceId}`);
   }
+
+  registerLocal(deviceId: number): Observable<NetworkInterface[]> {
+    return this.http.post<NetworkInterface[]>(`${environment.apiUrl}/interfaces/device/${deviceId}/register-local`, {});
+  }
 }
