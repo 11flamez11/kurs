@@ -7,12 +7,12 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
-
 import java.util.stream.Collectors;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/auth")
@@ -23,6 +23,10 @@ public class AuthController {
     public AuthController(AuthenticationManager authenticationManager) {
         this.authenticationManager = authenticationManager;
     }
+
+    /**
+     * Проверка логина/пароля. Дальше клиент ходит с HTTP Basic — серверная сессия не создаётся (STATELESS).
+     */
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
@@ -33,8 +37,12 @@ public class AuthController {
                     )
             );
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            return ResponseEntity.ok(request);
+            Map<String, Object> response = new HashMap<>();
+            response.put("username", authentication.getName());
+            response.put("roles", authentication.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .collect(Collectors.toList()));
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(401).body("Неверный логин или пароль");
         }
@@ -48,5 +56,11 @@ public class AuthController {
                         .map(GrantedAuthority::getAuthority)
                         .collect(Collectors.toList())
         );
+    }
+
+    /** Заглушка для фронта: выход только на клиенте (очистка storage). Сессии на сервере нет. */
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout() {
+        return ResponseEntity.ok().build();
     }
 }

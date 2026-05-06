@@ -4,7 +4,12 @@
     <nav class="nav-links">
       <a routerLink="/dashboard" routerLinkActive="active">Хосты</a>
       <a routerLink="/metrics" routerLinkActive="active">Мониторинг</a>
-      <a routerLink="/events" routerLinkActive="active">Алерты</a>
+      <a routerLink="/events" routerLinkActive="active" class="alerts-link">
+        Алерты
+        @if (unresolvedAlerts > 0) {
+          <span class="alerts-badge">{{ unresolvedAlerts }}</span>
+        }
+      </a>
       <a routerLink="/interfaces" routerLinkActive="active">Интерфейсы</a>
       @if (isAdmin) {
         <a routerLink="/admin/users" routerLinkActive="active">Пользователи</a>

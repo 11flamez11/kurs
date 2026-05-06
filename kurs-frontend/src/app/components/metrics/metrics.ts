@@ -1,13 +1,14 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { Subscription, interval } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration } from 'chart.js';
 import { Metric } from '../../models/metric';
 import { MetricService } from '../../services/metric.service';
 import { AuthService } from '../../services/auth.service';
 import { Navbar } from '../navbar/navbar';
+import { MonitoringSessionService } from '../../services/monitoring-session.service';
 
 @Component({
   selector: 'app-metrics',
@@ -28,7 +29,8 @@ export class Metrics implements OnInit, OnDestroy {
   monitoringActive = false;
   requestInFlight = false;
   collectIntervalSeconds = 2;
-  private monitoringSub?: Subscription;
+  private routeSub?: Subscription;
+  private sessionSub?: Subscription;
 
   trafficChartData: ChartConfiguration<'line'>['data'] = {
     labels: [],
@@ -74,19 +76,34 @@ export class Metrics implements OnInit, OnDestroy {
     private metricService: MetricService,
     private auth: AuthService,
     private route: ActivatedRoute,
+    private monitoringSession: MonitoringSessionService,
   ) {}
 
   ngOnInit(): void {
     this.isAdmin = this.auth.isAdmin();
-    this.route.queryParams.subscribe((params) => {
+    this.sessionSub = this.monitoringSession.state$.subscribe((state) => {
+      this.monitoringActive = state.monitoringActive;
+      this.requestInFlight = state.requestInFlight;
+      this.collectIntervalSeconds = state.collectIntervalSeconds;
+      this.liveMetrics = state.liveMetrics;
+      this.updateLatestAndChart();
+    });
+
+    this.routeSub = this.route.queryParams.subscribe((params) => {
       this.deviceId = params['deviceId'] ? +params['deviceId'] : null;
-      this.stopMonitoring();
+      const session = this.monitoringSession.snapshot;
+      if (session.monitoringActive && session.deviceId !== this.deviceId) {
+        this.monitoringSession.stop();
+      } else if (!session.monitoringActive && session.deviceId !== this.deviceId) {
+        this.monitoringSession.reset();
+      }
       this.loadMetrics();
     });
   }
 
   ngOnDestroy(): void {
-    this.stopMonitoring();
+    this.routeSub?.unsubscribe();
+    this.sessionSub?.unsubscribe();
   }
 
   loadMetrics(): void {
@@ -107,52 +124,20 @@ export class Metrics implements OnInit, OnDestroy {
   }
 
   startMonitoring(): void {
-    if (!this.deviceId || this.monitoringActive) return;
-    this.monitoringActive = true;
-    this.pollLiveMetric();
-    const ms = Math.max(1, this.collectIntervalSeconds) * 1000;
-    this.monitoringSub = interval(ms).subscribe(() => this.pollLiveMetric());
+    if (!this.deviceId) return;
+    this.monitoringSession.start(this.deviceId, this.collectIntervalSeconds);
   }
 
   stopMonitoring(): void {
-    this.monitoringActive = false;
-    this.requestInFlight = false;
-    if (this.monitoringSub) {
-      this.monitoringSub.unsubscribe();
-      this.monitoringSub = undefined;
-    }
+    this.monitoringSession.stop();
   }
 
   onIntervalChange(event: Event): void {
     const target = event.target as HTMLInputElement;
     const parsed = Number(target.value);
-    this.collectIntervalSeconds = Number.isFinite(parsed) ? Math.max(1, Math.min(30, parsed)) : 1;
-    if (this.monitoringActive) {
-      this.stopMonitoring();
-      this.startMonitoring();
-    }
-  }
-
-  private pollLiveMetric(): void {
-    if (!this.deviceId || this.requestInFlight) return;
-    this.requestInFlight = true;
-    this.metricService.collectForDevice(this.deviceId, 1, 1, false).subscribe({
-      next: (data) => {
-        const metric = data?.[0];
-        if (metric) {
-          this.liveMetrics.push(metric);
-          if (this.liveMetrics.length > 120) {
-            this.liveMetrics = this.liveMetrics.slice(-120);
-          }
-          this.updateLatestAndChart();
-        }
-        this.requestInFlight = false;
-      },
-      error: () => {
-        this.requestInFlight = false;
-        this.stopMonitoring();
-      },
-    });
+    const next = Number.isFinite(parsed) ? Math.max(1, Math.min(30, parsed)) : 1;
+    this.collectIntervalSeconds = next;
+    this.monitoringSession.updateInterval(next);
   }
 
   private updateLatestAndChart(): void {

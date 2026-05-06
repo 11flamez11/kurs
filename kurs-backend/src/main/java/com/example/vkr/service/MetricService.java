@@ -254,6 +254,7 @@ public class MetricService {
             createMonitoringEvent(
                     device,
                     "CRITICAL",
+                    "Высокая нагрузка CPU",
                     String.format("Высокая нагрузка CPU: %.2f%%", metric.getCpuLoad())
             );
         }
@@ -262,6 +263,7 @@ public class MetricService {
             createMonitoringEvent(
                     device,
                     "CRITICAL",
+                    "Высокое использование RAM",
                     String.format("Высокое использование RAM: %.2f%%", metric.getRamUsage())
             );
         }
@@ -270,21 +272,33 @@ public class MetricService {
             createMonitoringEvent(
                     device,
                     "WARNING",
+                    "Диск почти заполнен",
                     String.format("Диск почти заполнен: %.2f%%", metric.getDiskUsage())
             );
         }
 
         if (!networkInterfaceDetected) {
-            createMonitoringEvent(device, "WARNING", "Не удалось определить активный сетевой интерфейс");
+            createMonitoringEvent(
+                    device,
+                    "WARNING",
+                    "Не удалось определить активный сетевой интерфейс",
+                    "Не удалось определить активный сетевой интерфейс"
+            );
         }
 
         if (metric.getPingMs() != null) {
             if (metric.getPingMs() < 0) {
-                createMonitoringEvent(device, "ERROR", "Узел 8.8.8.8 недоступен (ping timeout)");
+                createMonitoringEvent(
+                        device,
+                        "ERROR",
+                        "Узел 8.8.8.8 недоступен",
+                        "Узел 8.8.8.8 недоступен (ping timeout)"
+                );
             } else if (metric.getPingMs() >= PING_WARNING_THRESHOLD) {
                 createMonitoringEvent(
                         device,
                         "WARNING",
+                        "Высокий ping",
                         String.format("Высокий ping: %.2f ms", metric.getPingMs())
                 );
             }
@@ -295,21 +309,23 @@ public class MetricService {
                 createMonitoringEvent(
                         device,
                         "CRITICAL",
+                        "Критические потери пакетов",
                         String.format("Критические потери пакетов: %.2f%%", metric.getPacketLossPercent())
                 );
             } else if (metric.getPacketLossPercent() >= PACKET_LOSS_WARNING_THRESHOLD) {
                 createMonitoringEvent(
                         device,
                         "WARNING",
+                        "Потери пакетов",
                         String.format("Потери пакетов: %.2f%%", metric.getPacketLossPercent())
                 );
             }
         }
     }
 
-    private void createMonitoringEvent(Device device, String severity, String description) {
-        Event lastSameEvent = eventRepository.findTopByDeviceAndSeverityAndDescriptionOrderByTimestampDesc(
-                device, severity, description
+    private void createMonitoringEvent(Device device, String severity, String descriptionPrefix, String description) {
+        Event lastSameEvent = eventRepository.findTopByDeviceAndSeverityAndDescriptionStartingWithOrderByTimestampDesc(
+                device, severity, descriptionPrefix
         );
         LocalDateTime now = LocalDateTime.now();
         if (lastSameEvent != null

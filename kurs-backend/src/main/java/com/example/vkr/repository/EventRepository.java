@@ -14,4 +14,10 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     List<Event> findByDeviceUser(User user);
 
     Event findTopByDeviceAndSeverityAndDescriptionOrderByTimestampDesc(Device device, String severity, String description);
+
+    Event findTopByDeviceAndSeverityAndDescriptionStartingWithOrderByTimestampDesc(
+            Device device,
+            String severity,
+            String descriptionPrefix
+    );
 }

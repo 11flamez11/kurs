@@ -16,18 +16,17 @@ export class AuthInterceptor implements HttpInterceptor {
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     if (req.url.includes('/api/auth/login') || req.url.includes('/api/users/register')) {
       return next.handle(req).pipe(
-        catchError((error: HttpErrorResponse) => {
-          if (error.status === 401) {
-            return throwError(() => error);
-          }
-          return throwError(() => error);
-        }),
-      )
+        catchError((error: HttpErrorResponse) => throwError(() => error)),
+      );
     }
 
-    const authReq = req.clone({
-      headers: this.auth.getAuthHeaders(),
-    });
+    const authHeaders = this.auth.getAuthHeaders();
+    const authorization = authHeaders.get('Authorization');
+    const authReq = authorization
+      ? req.clone({
+          setHeaders: { Authorization: authorization },
+        })
+      : req;
 
     return next.handle(authReq);
   }

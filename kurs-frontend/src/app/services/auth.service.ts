@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { catchError, Observable, of, tap } from 'rxjs';
 import { environment } from '../environments/environment';
-import { LoginRequest } from '../models/login-request';
+import { MonitoringSessionService } from './monitoring-session.service';
 
 export interface User {
   username: string;
@@ -13,24 +13,32 @@ export interface User {
   providedIn: 'root',
 })
 export class AuthService {
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private monitoringSession: MonitoringSessionService,
+  ) {}
 
-  login(username: string, password: string): Observable<LoginRequest> {
-    const dto: LoginRequest = {
+  login(username: string, password: string): Observable<User> {
+    const dto = {
       username: username,
       password: password,
     };
-    return this.http.post<LoginRequest>(`${environment.apiUrl}/auth/login`, dto).pipe(
-      tap((user) => {
+    return this.http.post<User>(`${environment.apiUrl}/auth/login`, dto).pipe(
+      tap(() => {
+        this.monitoringSession.reset();
         localStorage.setItem('credentials', JSON.stringify({ username, password }));
+      }),
+      tap((user) => {
+        localStorage.setItem('currentUser', JSON.stringify(user));
       }),
     );
   }
 
   logout(): void {
+    this.monitoringSession.reset();
     localStorage.removeItem('currentUser');
     localStorage.removeItem('credentials');
-    window.location.href = '/login';
+    this.http.post(`${environment.apiUrl}/auth/logout`, {}).pipe(catchError(() => of(null))).subscribe();
   }
 
   isLoggedIn(): boolean {
@@ -57,14 +65,17 @@ export class AuthService {
     );
   }
 
+  /** HTTP Basic на каждый запрос — без серверной сессии (STATELESS). */
   getAuthHeaders(): HttpHeaders {
     const credentialsStr = localStorage.getItem('credentials');
     if (!credentialsStr) {
       return new HttpHeaders();
     }
-
     try {
-      const { username, password } = JSON.parse(credentialsStr);
+      const { username, password } = JSON.parse(credentialsStr) as {
+        username: string;
+        password: string;
+      };
       return new HttpHeaders({
         Authorization: 'Basic ' + btoa(`${username}:${password}`),
       });
@@ -73,13 +84,11 @@ export class AuthService {
     }
   }
 
-  me(): Observable<User>{
+  me(): Observable<User> {
     return this.http.get<User>(`${environment.apiUrl}/auth/me`).pipe(
-      tap(user => {
-        if (!localStorage.getItem('currentUser')){
-          localStorage.setItem('currentUser',JSON.stringify(user));
-        }
-      })
+      tap((user) => {
+        localStorage.setItem('currentUser', JSON.stringify(user));
+      }),
     );
   }
 }
